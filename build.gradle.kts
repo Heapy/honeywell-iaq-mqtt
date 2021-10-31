@@ -34,5 +34,6 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
+    applicationName = "apx"
     mainClass.set("io.heapy.smarthome.MainKt")
 }
