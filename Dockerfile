@@ -1,4 +1,4 @@
 # Container with application
-FROM amazoncorretto:17.0.1
+FROM bellsoft/liberica-openjdk-centos:11
 COPY /build/install/apx /app
 ENTRYPOINT /app/bin/apx
