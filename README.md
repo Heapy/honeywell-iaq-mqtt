@@ -19,6 +19,7 @@ version: "3.9"
 services:
   honeywell_iaq:
     container_name: "honeywell_iaq"
+    command: "mqtt" # or "log"
     restart: always
     image: "ghcr.io/heapy/honeywell-iaq:main"
     environment:
@@ -28,3 +29,9 @@ services:
       - PASSWORD=hhjwq15151860095
       - PHONE_UUID=generate-some-using- https://duckduckgo.com/?q=uuid
 ```
+
+## Why it's not ideal solutions
+
+This solution relies on unstable Honeywell chinese cloud servers. Sometimes they are may not be available or like it's happen to me, TLS certificate was expired for few days.
+
+**Better solution would be to develop firmware that connects directly to MQTT Broker from device.**
