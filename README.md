@@ -23,6 +23,7 @@ services:
     image: "ghcr.io/heapy/honeywell-iaq:main"
     environment:
       - MQTT_URL=tcp://192.168.1.1:1883
+      - MQTT_CLIENT_ID=honeywell-iaq-mqtt
       - PHONE_NUMBER=+8615151860095
       - PASSWORD=hhjwq15151860095
       - PHONE_UUID=generate-some-using- https://duckduckgo.com/?q=uuid
