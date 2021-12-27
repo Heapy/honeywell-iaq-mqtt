@@ -15,6 +15,7 @@ fun readConfiguration(): Configuration {
 }
 
 data class Configuration(
+    val disableSslValidation: Boolean = true,
     val honeywell: HoneywellConfiguration,
     val mqtt: MqttConfiguration?,
 )

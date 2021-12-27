@@ -6,8 +6,9 @@ import io.ktor.client.request.header
 import io.ktor.client.request.url
 import io.ktor.http.HttpHeaders
 
-suspend fun HttpClient.logDevices(
+suspend fun HttpClient.fetchDevices(
     cookie: String,
+    onlineStatusUpdater: OnlineStatusUpdater,
 ) {
     val response = get<DevicesResponse> {
         url("https://iaq.honcloud.honeywell.com.cn/v2/00100002/user/device/list")
@@ -15,8 +16,11 @@ suspend fun HttpClient.logDevices(
     }
 
     logger.info("{} devices fetched", response.devices.size)
-    response.devices.forEach {
-        logger.info("{}", it)
+    response.devices.forEach { device ->
+        if (device.online) {
+            onlineStatusUpdater.pingDevice(device.deviceId)
+        }
+        logger.info("{}", device)
     }
 }
 

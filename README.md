@@ -35,3 +35,7 @@ services:
 This solution relies on unstable Honeywell chinese cloud servers. Sometimes they are may not be available or like it's happen to me, TLS certificate was expired for few days.
 
 **Better solution would be to develop firmware that connects directly to MQTT Broker from device.**
+
+## Home Assistant integration
+
+![home_assistant](home_assistant.png)

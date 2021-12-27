@@ -1,7 +1,7 @@
 package io.heapy.smarthome
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.ktor.client.HttpClient
 import io.ktor.client.features.websocket.webSocket
 import io.ktor.client.request.header
 import io.ktor.client.request.url
@@ -12,8 +12,26 @@ import io.ktor.http.cio.websocket.readText
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-typealias Sink = (DeviceUpdate) -> Unit
+fun interface Sink {
+    fun process(update: DeviceUpdate)
+}
 
+/**
+ * Example message:
+ *
+ * ```kotlin
+ * DeviceUpdate(
+ *     deviceId = "FFF",
+ *     co2 = 1132,
+ *     hcho = 60,
+ *     tvoc = 130,
+ *     pm25 = 3,
+ *     temperature = 23,
+ *     humidity = 18,
+ *     iq = 91,
+ * )
+ * ```
+ */
 data class DeviceUpdate(
     val deviceId: String,
     val co2: String,
@@ -22,22 +40,23 @@ data class DeviceUpdate(
     val pm25: String,
     val temperature: String,
     val humidity: String,
+    val iq: String,
 )
 
-suspend fun receiveUpdates(
-    sinkProvider: suspend (Configuration) -> Sink,
+class Application(
+    private val config: Configuration,
+    private val mapper: ObjectMapper,
+    private val httpClient: HttpClient,
+    private val sink: Sink,
+    private val onlineStatusUpdater: OnlineStatusUpdater,
 ) {
-    val config = readConfiguration()
-    val sink = sinkProvider(config)
-    val mapper = jacksonObjectMapper()
-
-    httpClient { client ->
-        val cookie = client.login(config)
-        client.logDevices(cookie)
+    suspend fun run() {
+        val cookie = httpClient.login(config)
+        httpClient.fetchDevices(cookie, onlineStatusUpdater)
 
         coroutineScope {
             launch {
-                client.webSocket({
+                httpClient.webSocket({
                     method = HttpMethod.Get
                     url(
                         "wss",
@@ -50,7 +69,8 @@ suspend fun receiveUpdates(
                     while (true) {
                         val othersMessage = incoming.receive() as? Frame.Text
                         val message = othersMessage?.readText() ?: ""
-                        mapper.parseUpdate(message)?.let(sink)
+                        mapper.parseUpdate(message)
+                            ?.let(sink::process)
                     }
                 }
             }
@@ -58,7 +78,9 @@ suspend fun receiveUpdates(
     }
 }
 
+
 fun ObjectMapper.parseUpdate(message: String): DeviceUpdate? {
+    logger.debug("Original ws message: {}", message)
     val node = readTree(message)
     val type = node.get("type").asText("Unknown")
     return when (type) {
@@ -75,6 +97,7 @@ fun ObjectMapper.parseUpdate(message: String): DeviceUpdate? {
                 co2 = node.get("co2").asText(""),
                 tvoc = node.get("tvoc").asText(""),
                 hcho = node.get("hcho").asText(""),
+                iq = node.get("iq").asText(""),
             )
         }
         "IAQLanguage", "OnlineStatus" -> {
